@@ -6,9 +6,9 @@ Delicious strips of cured meat!
 
 ## What is _this_ bacon?
 
-Bacon will be a simple `HTTP` based server that will issue commands to the host. It’s a continuous integration model built on top of `SCM` and `HTTP`, that buys in to the notion of archetecture as software.
+Bacon will be a simple `HTTP` based server that will issue commands to the host. It’s a continuous integration model built on top of `SCM` and `HTTP`, that buys in to the notion of infrastructure as code.
 
-The basic idea  is that you specify a list of methods in a `Baconfile` - which is a `JSON` structure. This specification is called a `party` and once you’ve given a server (or `piggy`) a the `Baconfile` the `piggy` becomes the `party` `leader`. Then other little `piggies` can request to `join` the `party` over a `JSON HTTP` interface (I think it will actually be `HTTPS`, it should all be wrapped up in `SSL` from the start.)
+The basic idea  is that you specify a list of methods in a `Baconfile` - which is a `JSON` structure. This specification is called a `party` and once you’ve given a server (or `piggy`) the `Baconfile` the `piggy` becomes the `party` `leader`. Then other little `piggies` can request to `join` the `party` over a `JSON HTTP` interface (I think it will actually be `HTTPS`, it should all be wrapped up in `SSL` from the start.)
 
 Once the `piggies` have joined the `party` the `party` `leader` can issue commands to the `party` `members` with the `methods` from the `Baconfile`.
 
