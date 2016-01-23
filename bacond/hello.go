@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,7 +18,8 @@ func httpMethod(w http.ResponseWriter, req *http.Request) {
 func init() {
 	http.HandleFunc("/", version)
 	http.HandleFunc("/version/", version)
-	http.HandleFunc("/party/", version)
+	http.HandleFunc("/call/", partyCall)
+	http.HandleFunc("/join/", partyJoin)
 }
 
 // bacon --version
@@ -41,21 +43,37 @@ func partyJoin(w http.ResponseWriter, req *http.Request) {
 // New SSL keys are generated each time the piggies are brought up, as
 // it's a teensy bit more secure and it only matters that their channels
 // of communication encrypted.
-func keygen() {
+func keygen() error {
 	os.Remove("server.key")
 	os.Remove("server.pem")
 
-	key := exec.Command("openssl","genrsa","-out","server.key","2048")
-	_ = key.Run()
+	key := exec.Command("openssl", "genrsa",
+		"-out", "server.key",
+		"2048")
+	err := key.Run()
 
-	cert := exec.Command("openssl", "req", "-new", "-x509", "-key", "server.key", "-out", "server.pem", "-days", "3650", "-subj", "/C=GB/ST=Not Applicable/L=Somewhere/O=bacond/OU=piggy/CN=piggy.bacond")
-	_ = cert.Run()
+	if (err == nil) {
+		cert := exec.Command("openssl", "req", 
+			"-new", "-x509", 
+			"-key", "server.key", 
+			"-out", "server.pem", 
+			"-days", "3650", 
+			"-subj", "/C=GB/ST=Not Applicable/L=Somewhere/O=bacond/OU=piggy/CN=piggy.bacond")
+		err = cert.Run()
+	}
+	return err
+}
 
+type App struct {
+	Exitcode int
+	stdout, stderr bytes.Buffer	
 }
 
 func main() {
 	keygen()
-
+	var app App
+	app.Exitcode = 1
+	fmt.Printf("%d\n", app.Exitcode)
 	fmt.Printf("bacond: comin' up... comin' up... comin' up...")
 	http.ListenAndServeTLS(":8888", "server.pem", "server.key", nil)
 }
