@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"net/http"
 	"io"
-	"./party"
+	"net/http"
+	"os"
+	"os/exec"
+
+//	"./party"
 )
 
 func httpMethod(w http.ResponseWriter, req *http.Request) {
@@ -12,7 +16,10 @@ func httpMethod(w http.ResponseWriter, req *http.Request) {
 }
 
 func init() {
-	http.HandleFunc("/party/", version)
+	http.HandleFunc("/", version)
+	http.HandleFunc("/version/", version)
+	http.HandleFunc("/call/", partyCall)
+	http.HandleFunc("/join/", partyJoin)
 }
 
 // bacon --version
@@ -33,12 +40,49 @@ func partyJoin(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "join: todo")
 }
 
-func main() {
-	fmt.Printf("jam: comin' up... comin' up... comin' up...")
-	party.Doit()
-	http.HandleFunc("/", version)
-	http.HandleFunc("/version/", version)
-	http.HandleFunc("/register/", httpMethod)
+// New SSL keys are generated each time the piggies are brought up, as
+// it's a teensy bit more secure and it only matters that their channels
+// of communication encrypted.
+func keygen() error {
+	os.Remove("server.key")
+	os.Remove("server.pem")
 
-	http.ListenAndServe(":8080", nil)
+	key := exec.Command("openssl", "genrsa",
+		"-out", "server.key",
+		"2048")
+	err := key.Run()
+
+	if (err == nil) {
+		cert := exec.Command("openssl", "req", 
+			"-new", "-x509", 
+			"-key", "server.key", 
+			"-out", "server.pem", 
+			"-days", "3650", 
+			"-subj", "/C=GB/ST=Not Applicable/L=Somewhere/O=bacond/OU=piggy/CN=piggy.bacond")
+		err = cert.Run()
+	}
+	return err
 }
+
+type App struct {
+	Exitcode int
+	stdout, stderr bytes.Buffer	
+}
+
+func main() {
+	keygen()
+	var app App
+	app.Exitcode = 1
+	fmt.Printf("%d\n", app.Exitcode)
+	fmt.Printf("bacond: comin' up... comin' up... comin' up...")
+	http.ListenAndServeTLS(":8888", "server.pem", "server.key", nil)
+}
+
+//	This behaviour will be integral
+//	var outbuf, errbuf bytes.Buffer
+//	cmd.Stdout = &outbuf
+//	cmd.Stderr = &errbuf
+//	stdout := outbuf.String()
+//	stderr := errbuf.String()
+
+
