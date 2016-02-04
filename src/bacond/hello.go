@@ -1,13 +1,12 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
-
 //	"./party"
 )
 
@@ -18,8 +17,7 @@ func httpMethod(w http.ResponseWriter, req *http.Request) {
 func init() {
 	http.HandleFunc("/", version)
 	http.HandleFunc("/version/", version)
-	http.HandleFunc("/call/", partyCall)
-	http.HandleFunc("/join/", partyJoin)
+	http.HandleFunc("/party/", version)
 }
 
 // bacon --version
@@ -43,38 +41,47 @@ func partyJoin(w http.ResponseWriter, req *http.Request) {
 // New SSL keys are generated each time the piggies are brought up, as
 // it's a teensy bit more secure and it only matters that their channels
 // of communication encrypted.
-func keygen() error {
+func keygen() {
 	os.Remove("server.key")
 	os.Remove("server.pem")
 
 	key := exec.Command("openssl", "genrsa",
-		"-out", "server.key",
-		"2048")
-	err := key.Run()
+		"-out", "server.key", "2048")
+	_ = key.Run()
 
-	if (err == nil) {
-		cert := exec.Command("openssl", "req", 
-			"-new", "-x509", 
-			"-key", "server.key", 
-			"-out", "server.pem", 
-			"-days", "3650", 
-			"-subj", "/C=GB/ST=Not Applicable/L=Somewhere/O=bacond/OU=piggy/CN=piggy.bacond")
-		err = cert.Run()
-	}
-	return err
+	cert := exec.Command("openssl", "req",
+		"-new", "-x509",
+		"-key", "server.key",
+		"-out", "server.pem",
+		"-days", "3650",
+		"-subj", "/C=GB/ST=Not Applicable/L=Somewhere/O=bacond/OU=piggy/CN=piggy.bacond")
+	_ = cert.Run()
 }
 
-type App struct {
-	Exitcode int
-	stdout, stderr bytes.Buffer
+type Baconfile struct {
+	Desc string `json:"desc"`
+	Name string `json:"name"`
+	Repo string `json:"repo"`
+	Version string `json:"version"`
+	Methods map[string]string `json:"methods"`
 }
 
 func main() {
+	var jsonBlob = []byte(`{
+		"name": "Platypus", 
+		"desc": "Monotremata",
+		"methods":{"mrawr":"teehee","murgh":true}
+	}`)
+
+	var bf Baconfile
+	err := json.Unmarshal(jsonBlob, &bf)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	fmt.Printf("%+v\n", bf)
+
 	keygen()
-	var app App
-	app.Exitcode = 1
-	fmt.Printf("%d\n", app.Exitcode)
-	fmt.Printf("bacond: oink, oink, oink... (0∞0)")
+	fmt.Printf("bacond: oink, oink, oink! \\(0∞0)/")
 	http.ListenAndServeTLS(":8888", "server.pem", "server.key", nil)
 }
 
@@ -84,5 +91,3 @@ func main() {
 //	cmd.Stderr = &errbuf
 //	stdout := outbuf.String()
 //	stderr := errbuf.String()
-
-
